@@ -82,9 +82,7 @@ export class NotFoundError extends AppError {
   }
 }
 
-/**
- * Lambda error handling middleware
- */
+
 export function withErrorHandler(handler: LambdaHandler): LambdaHandler {
   return async (event: APIGatewayProxyEvent, context: Context) => {
     try {
@@ -142,9 +140,6 @@ export function withErrorHandler(handler: LambdaHandler): LambdaHandler {
   };
 }
 
-/**
- * Lambda request validation middleware
- */
 export function validateRequest<T>(schema: any) {
   return (handler: LambdaHandler): LambdaHandler => {
     return async (event: APIGatewayProxyEvent, context: Context) => {
@@ -181,9 +176,7 @@ export function validateRequest<T>(schema: any) {
   };
 }
 
-/**
- * Lambda security headers middleware
- */
+
 export function withSecurityHeaders(handler: LambdaHandler): LambdaHandler {
   return async (event: APIGatewayProxyEvent, context: Context) => {
     const response = await handler(event, context);

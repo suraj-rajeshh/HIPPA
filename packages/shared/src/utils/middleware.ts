@@ -1,17 +1,12 @@
 import { LambdaHandler } from '../types';
 
-/**
- * Compose multiple middleware functions into a single middleware
- */
 export function compose(...middlewares: Array<(handler: LambdaHandler) => LambdaHandler>) {
   return (handler: LambdaHandler): LambdaHandler => {
     return middlewares.reduceRight((acc, middleware) => middleware(acc), handler);
   };
 }
 
-/**
- * Sanitize sensitive data from objects
- */
+
 export function sanitizeSensitiveData(data: any): any {
   if (!data) return data;
   

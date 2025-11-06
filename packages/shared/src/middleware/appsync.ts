@@ -52,9 +52,7 @@ const defaultIdentity: APIGatewayEventIdentity = {
   vpceId: null
 };
 
-/**
- * Convert an AppSync resolver to a Lambda handler
- */
+
 export function appSyncToLambda<TArgs = any, TResult = any>(
   handler: AppSyncResolverHandler<TArgs, TResult>
 ): LambdaHandler {
@@ -106,9 +104,7 @@ export function appSyncToLambda<TArgs = any, TResult = any>(
   };
 };
 
-/**
- * Convert a Lambda handler to an AppSync resolver
- */
+
 export function lambdaToAppSync<TArgs = any, TResult = any>(
   handler: LambdaHandler
 ): AppSyncResolverHandler<TArgs, TResult> {

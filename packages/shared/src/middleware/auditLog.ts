@@ -11,9 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 const dynamoDB = new DynamoDB.DocumentClient();
 const TABLE_NAME = process.env.AUDIT_LOG_TABLE || 'healthcare-audit-logs';
 
-/**
- * Sanitize sensitive data from request/response bodies
- */
+
 function sanitizeBody(body: any): any {
   if (!body) return body;
   
@@ -39,9 +37,7 @@ function sanitizeBody(body: any): any {
   return sanitized;
 }
 
-/**
- * Create HIPAA-compliant audit log entry
- */
+
 export async function createAuditLog(entry: AuditLogEntry): Promise<void> {
   const timestamp = new Date().toISOString();
   const ttl = Math.floor(Date.now() / 1000) + (7 * 365 * 24 * 60 * 60); // 7 years TTL
@@ -61,9 +57,7 @@ export async function createAuditLog(entry: AuditLogEntry): Promise<void> {
   }
 }
 
-/**
- * Query audit logs with filters
- */
+
 export async function queryAuditLogs(filters: {
   userId?: string;
   resource?: string;
