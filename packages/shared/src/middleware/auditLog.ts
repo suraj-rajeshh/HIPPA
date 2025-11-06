@@ -117,9 +117,7 @@ export async function queryAuditLogs(filters: {
   };
 }
 
-/**
- * Lambda middleware for audit logging
- */
+
 export function withAuditLog(options: {
   resourceType: string;
   phiAccessed?: boolean;
