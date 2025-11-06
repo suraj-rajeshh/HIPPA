@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"  # API Gateway
+      - "4000:4000"  # AppSync
+      - "8000:8000"  # DynamoDB Local
+    environment:
+      - NODE_ENV=development
+      - AWS_ACCESS_KEY_ID=local
+      - AWS_SECRET_ACCESS_KEY=local
+      - AWS_REGION=us-east-1
+      - DYNAMODB_ENDPOINT=http://dynamodb-local:8000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=healthcare
+      - POSTGRES_USER=healthcare_user
+      - POSTGRES_PASSWORD=healthcare_password
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - dynamodb-local
+      - postgres
+
+  dynamodb-local:
+    image: amazon/dynamodb-local
+    ports:
+      - "8000:8000"
+    command: "-jar DynamoDBLocal.jar -sharedDb"
+    volumes:
+      - dynamodb-data:/home/dynamodblocal/data
+
+  postgres:
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=healthcare
+      - POSTGRES_USER=healthcare_user
+      - POSTGRES_PASSWORD=healthcare_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-database.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  dynamodb-data:
+  postgres-data:

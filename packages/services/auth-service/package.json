@@ -1,0 +1,23 @@
+{
+  "name": "@healthcare/auth-service",
+  "version": "1.0.0",
+  "main": "../../../dist/packages/services/auth-service/src/lambda.js",
+  "scripts": {
+    "build": "tsc -b",
+    "watch": "tsc -b --watch",
+    "clean": "tsc -b --clean"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.478.0",
+    "@healthcare/shared": "^1.0.0",
+    "aws-lambda": "^1.0.7",
+    "bcryptjs": "^2.4.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.131",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}

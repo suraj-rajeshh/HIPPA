@@ -1,0 +1,324 @@
+service: healthcare-hipaa-system
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  memorySize: 1024
+  timeout: 30
+  versionFunctions: false
+  
+  environment:
+    STAGE: ${self:provider.stage}
+    REGION: ${self:provider.region}
+    AURORA_CLUSTER_ARN: ${cf:healthcare-infrastructure-${self:provider.stage}.AuroraClusterArn}
+    AURORA_SECRET_ARN: ${cf:healthcare-infrastructure-${self:provider.stage}.AuroraSecretArn}
+    COGNITO_USER_POOL_ID: ${cf:healthcare-infrastructure-${self:provider.stage}.CognitoUserPoolId}
+    S3_BUCKET: ${cf:healthcare-infrastructure-${self:provider.stage}.S3BucketName}
+    ENCRYPTION_KEY_ID: ${cf:healthcare-infrastructure-${self:provider.stage}.KMSKeyId}
+    AUDIT_LOG_TABLE: ${self:service}-audit-logs-${self:provider.stage}
+  
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - rds-data:ExecuteStatement
+            - rds-data:BatchExecuteStatement
+          Resource: ${cf:healthcare-infrastructure-${self:provider.stage}.AuroraClusterArn}
+        - Effect: Allow
+          Action:
+            - secretsmanager:GetSecretValue
+          Resource: ${cf:healthcare-infrastructure-${self:provider.stage}.AuroraSecretArn}
+        - Effect: Allow
+          Action:
+            - cognito-idp:*
+          Resource: ${cf:healthcare-infrastructure-${self:provider.stage}.CognitoUserPoolArn}
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:Query
+            - dynamodb:BatchWriteItem
+            - dynamodb:BatchGetItem
+          Resource: 
+            - !GetAtt AuditLogTable.Arn
+            - !Join ['', [!GetAtt AuditLogTable.Arn, '/index/*']]
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+          Resource: 
+            - arn:aws:s3:::${cf:healthcare-infrastructure-${self:provider.stage}.S3BucketName}/*
+        - Effect: Allow
+          Action:
+            - kms:Decrypt
+            - kms:Encrypt
+            - kms:GenerateDataKey
+          Resource: ${cf:healthcare-infrastructure-${self:provider.stage}.KMSKeyArn}
+
+plugins:
+  - serverless-esbuild
+  - serverless-appsync-plugin
+  - serverless-iam-roles-per-function
+  - serverless-prune-plugin
+  - serverless-offline
+
+custom:
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: true
+    exclude:
+      - aws-sdk
+    target: node20
+    platform: node
+  
+  prune:
+    automatic: true
+    number: 3
+  
+  appSync:
+    name: healthcare-api-${self:provider.stage}
+    authenticationType: AMAZON_COGNITO_USER_POOLS
+    userPoolConfig:
+      userPoolId: ${cf:healthcare-infrastructure-${self:provider.stage}.CognitoUserPoolId}
+      awsRegion: ${self:provider.region}
+      defaultAction: ALLOW
+    schema: packages/graphql/schema/schema.graphql
+    dataSources:
+      - type: AWS_LAMBDA
+        name: authServiceDataSource
+        config:
+          functionName: authService
+      - type: AWS_LAMBDA
+        name: patientServiceDataSource
+        config:
+          functionName: patientService
+      - type: AWS_LAMBDA
+        name: appointmentServiceDataSource
+        config:
+          functionName: appointmentService
+      - type: AWS_LAMBDA
+        name: medicalRecordsServiceDataSource
+        config:
+          functionName: medicalRecordsService
+    resolvers:
+      # Auth resolvers
+      - dataSource: authServiceDataSource
+        type: Mutation
+        field: register
+      - dataSource: authServiceDataSource
+        type: Mutation
+        field: login
+      - dataSource: authServiceDataSource
+        type: Query
+        field: me
+      
+      # Patient resolvers
+      - dataSource: patientServiceDataSource
+        type: Query
+        field: getPatient
+      - dataSource: patientServiceDataSource
+        type: Query
+        field: listPatients
+      - dataSource: patientServiceDataSource
+        type: Mutation
+        field: createPatient
+      - dataSource: patientServiceDataSource
+        type: Mutation
+        field: updatePatient
+      
+      # Appointment resolvers
+      - dataSource: appointmentServiceDataSource
+        type: Query
+        field: getAppointment
+      - dataSource: appointmentServiceDataSource
+        type: Query
+        field: listAppointments
+      - dataSource: appointmentServiceDataSource
+        type: Mutation
+        field: createAppointment
+      - dataSource: appointmentServiceDataSource
+        type: Mutation
+        field: updateAppointment
+      
+      # Medical Records resolvers
+      - dataSource: medicalRecordsServiceDataSource
+        type: Query
+        field: getMedicalRecord
+      - dataSource: medicalRecordsServiceDataSource
+        type: Query
+        field: listMedicalRecords
+      - dataSource: medicalRecordsServiceDataSource
+        type: Mutation
+        field: createMedicalRecord
+
+functions:
+  # Auth Service
+  authService:
+    handler: dist/packages/services/auth-service/lambda.handler
+    environment:
+      SERVICE_NAME: auth-service
+    events:
+      - http:
+          path: /auth/{proxy+}
+          method: ANY
+          cors: true
+  
+  # Patient Service
+  patientService:
+    handler: dist/packages/services/patient-service/lambda.handler
+    environment:
+      SERVICE_NAME: patient-service
+    events:
+      - http:
+          path: /patients/{proxy+}
+          method: ANY
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId: 
+              Ref: ApiGatewayAuthorizer
+  
+  # Appointment Service
+  appointmentService:
+    handler: dist/packages/services/appointment-service/lambda.handler
+    environment:
+      SERVICE_NAME: appointment-service
+    events:
+      - http:
+          path: /appointments/{proxy+}
+          method: ANY
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId: 
+              Ref: ApiGatewayAuthorizer
+  
+  # Medical Records Service
+  medicalRecordsService:
+    handler: dist/packages/services/medical-records-service/lambda.handler
+    environment:
+      SERVICE_NAME: medical-records-service
+    events:
+      - http:
+          path: /medical-records/{proxy+}
+          method: ANY
+          cors: true
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId: 
+              Ref: ApiGatewayAuthorizer
+  
+  # Scheduled Jobs
+  appointmentReminders:
+    handler: dist/packages/services/scheduled-service/handlers/appointmentReminders.handler
+    events:
+      - schedule:
+          rate: rate(1 hour)
+          enabled: true
+  
+  dataBackup:
+    handler: dist/packages/services/scheduled-service/handlers/dataBackup.handler
+    events:
+      - schedule:
+          rate: cron(0 2 * * ? *)
+          enabled: true
+
+resources:
+  Resources:
+    ApiGatewayAuthorizer:
+      Type: AWS::ApiGateway::Authorizer
+      Properties:
+        Name: CognitoAuthorizer
+        Type: COGNITO_USER_POOLS
+        IdentitySource: method.request.header.Authorization
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        ProviderARNs:
+          - ${cf:healthcare-infrastructure-${self:provider.stage}.CognitoUserPoolArn}
+    
+    # API Gateway Usage Plan
+    UsagePlan:
+      Type: AWS::ApiGateway::UsagePlan
+      Properties:
+        UsagePlanName: ${self:service}-${self:provider.stage}-usage-plan
+        Description: Usage plan for healthcare API
+        ApiStages:
+          - ApiId: !Ref ApiGatewayRestApi
+            Stage: ${self:provider.stage}
+        Quota:
+          Limit: 10000
+          Period: MONTH
+        Throttle:
+          BurstLimit: 100
+          RateLimit: 50
+    
+    # API Key for rate limiting
+    ApiKey:
+      Type: AWS::ApiGateway::ApiKey
+      Properties:
+        Name: ${self:service}-${self:provider.stage}-api-key
+        Description: API Key for healthcare API
+        Enabled: true
+    
+    # Usage Plan Key
+    UsagePlanKey:
+      Type: AWS::ApiGateway::UsagePlanKey
+      Properties:
+        KeyId: !Ref ApiKey
+        KeyType: API_KEY
+        UsagePlanId: !Ref UsagePlan
+    
+    AuditLogTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:service}-audit-logs-${self:provider.stage}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+          - AttributeName: resourceType
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+          - AttributeName: timestamp
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: UserIndex
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+              - AttributeName: timestamp
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: ResourceTypeIndex
+            KeySchema:
+              - AttributeName: resourceType
+                KeyType: HASH
+              - AttributeName: timestamp
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
+        Tags:
+          - Key: Environment
+            Value: ${self:provider.stage}
+          - Key: Service
+            Value: ${self:service}
+          - Key: Purpose
+            Value: HIPAA-Audit-Logs

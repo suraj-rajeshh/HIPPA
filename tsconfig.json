@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "declaration": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "types": ["node", "jest"],
+    "composite": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@healthcare/*": ["packages/*/src"]
+    }
+  },
+  "references": [
+    { "path": "packages/shared" },
+    { "path": "packages/services/auth-service" },
+    { "path": "packages/services/patient-service" },
+    { "path": "packages/services/medical-record-service" },
+    { "path": "packages/services/appointment-service" },
+    { "path": "scripts" }
+  ],
+  "files": [],
+  "exclude": ["node_modules", "**/dist", "**/*.test.ts"]
+}

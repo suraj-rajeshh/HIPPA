@@ -1,0 +1,59 @@
+{
+  "name": "healthcare-aws-serverless",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/shared",
+    "packages/services/*",
+    "packages/graphql",
+    "scripts"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm install --workspaces",
+    "build": "npm run clean && tsc -b",
+    "build:watch": "tsc -b -w",
+    "clean": "rm -rf dist && tsc -b --clean",
+    "build:shared": "npm run clean && tsc -b packages/shared",
+    "build:services": "npm run build:shared && tsc -b packages/services/*",
+    "clean:all": "npm run clean && rm -rf packages/*/dist packages/services/*/dist",
+    "deploy:dev": "npm run build && serverless deploy --stage dev",
+    "deploy:prod": "serverless deploy --stage prod",
+    "remove:dev": "serverless remove --stage dev",
+    "test": "jest",
+    "lint": "eslint . --ext .ts",
+    "tf:init": "cd infrastructure/terraform && terraform init",
+    "tf:plan": "cd infrastructure/terraform && terraform plan",
+    "tf:apply": "cd infrastructure/terraform && terraform apply",
+    "tf:destroy": "cd infrastructure/terraform && terraform destroy",
+    "start:dev": "serverless offline start",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:clean": "docker-compose down -v",
+    "init-dynamodb": "ts-node scripts/init-dynamodb.ts",
+    "init-database": "ts-node scripts/init-database.ts",
+    "seed-data": "ts-node scripts/seed-data.ts",
+    "setup:local": "chmod +x scripts/setup-local.sh && ./scripts/setup-local.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/uuid": "^10.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "esbuild": "^0.19.8",
+    "eslint": "^8.54.0",
+    "jest": "^29.7.0",
+    "serverless": "^3.38.0",
+    "serverless-appsync-plugin": "^2.3.1",
+    "serverless-domain-manager": "^7.3.4",
+    "serverless-esbuild": "^1.52.0",
+    "serverless-iam-roles-per-function": "^3.2.0",
+    "serverless-offline": "^13.3.0",
+    "serverless-prune-plugin": "^2.1.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@aws-sdk/client-kms": "^3.925.0",
+    "aws-sdk": "^2.1503.0"
+  }
+}

@@ -1,0 +1,234 @@
+name: healthcare-api-${self:provider.stage}
+authenticationType: AMAZON_COGNITO_USER_POOLS
+userPoolConfig:
+  userPoolId: ${self:custom.userPoolId}
+  awsRegion: ${self:provider.region}
+  defaultAction: ALLOW
+mappingTemplatesLocation: packages/graphql/resolvers
+schema: packages/graphql/schema/schema.graphql
+
+dataSources:
+  - type: AWS_LAMBDA
+    name: AuthService
+    description: Auth service operations
+    config:
+      functionName: auth-service
+      serviceRoleArn: ${self:custom.appSyncServiceRole}
+
+  - type: AWS_LAMBDA
+    name: PatientService
+    description: Patient service operations
+    config:
+      functionName: patient-service
+      serviceRoleArn: ${self:custom.appSyncServiceRole}
+
+  - type: AWS_LAMBDA
+    name: MedicalRecordService
+    description: Medical record service operations
+    config:
+      functionName: medical-record-service
+      serviceRoleArn: ${self:custom.appSyncServiceRole}
+
+  - type: AWS_LAMBDA
+    name: AppointmentService
+    description: Appointment service operations
+    config:
+      functionName: appointment-service
+      serviceRoleArn: ${self:custom.appSyncServiceRole}
+
+mappingTemplates:
+  # Auth Resolvers
+  - type: Query
+    field: me
+    dataSource: AuthService
+    request: auth/me.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: register
+    dataSource: AuthService
+    request: auth/register.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: login
+    dataSource: AuthService
+    request: auth/login.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: logout
+    dataSource: AuthService
+    request: auth/logout.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: refreshToken
+    dataSource: AuthService
+    request: auth/refreshToken.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: changePassword
+    dataSource: AuthService
+    request: auth/changePassword.request.vtl
+    response: common/passthrough.response.vtl
+
+  # Patient Resolvers
+  - type: Query
+    field: getPatient
+    dataSource: PatientService
+    request: patient/getPatient.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Query
+    field: listPatients
+    dataSource: PatientService
+    request: patient/listPatients.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Query
+    field: searchPatients
+    dataSource: PatientService
+    request: patient/searchPatients.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: createPatient
+    dataSource: PatientService
+    request: patient/createPatient.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: updatePatient
+    dataSource: PatientService
+    request: patient/updatePatient.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: deletePatient
+    dataSource: PatientService
+    request: patient/deletePatient.request.vtl
+    response: common/passthrough.response.vtl
+
+  # Medical Record Resolvers
+  - type: Query
+    field: getMedicalRecord
+    dataSource: MedicalRecordService
+    request: medical-record/getMedicalRecord.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Query
+    field: listMedicalRecords
+    dataSource: MedicalRecordService
+    request: medical-record/listMedicalRecords.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: createMedicalRecord
+    dataSource: MedicalRecordService
+    request: medical-record/createMedicalRecord.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: updateMedicalRecord
+    dataSource: MedicalRecordService
+    request: medical-record/updateMedicalRecord.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: deleteMedicalRecord
+    dataSource: MedicalRecordService
+    request: medical-record/deleteMedicalRecord.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: uploadDocument
+    dataSource: MedicalRecordService
+    request: medical-record/uploadDocument.request.vtl
+    response: common/passthrough.response.vtl
+
+  # Appointment Resolvers
+  - type: Query
+    field: getAppointment
+    dataSource: AppointmentService
+    request: appointment/getAppointment.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Query
+    field: listAppointments
+    dataSource: AppointmentService
+    request: appointment/listAppointments.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Query
+    field: getAvailableSlots
+    dataSource: AppointmentService
+    request: appointment/getAvailableSlots.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: createAppointment
+    dataSource: AppointmentService
+    request: appointment/createAppointment.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: updateAppointment
+    dataSource: AppointmentService
+    request: appointment/updateAppointment.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: cancelAppointment
+    dataSource: AppointmentService
+    request: appointment/cancelAppointment.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Mutation
+    field: confirmAppointment
+    dataSource: AppointmentService
+    request: appointment/confirmAppointment.request.vtl
+    response: common/passthrough.response.vtl
+
+  # Nested Resolvers
+  - type: Patient
+    field: appointments
+    dataSource: AppointmentService
+    request: appointment/getPatientAppointments.request.vtl
+    response: common/passthrough.response.vtl
+
+  - type: Patient
+    field: medicalRecords
+    dataSource: MedicalRecordService
+    request: medical-record/getPatientRecords.request.vtl
+    response: common/passthrough.response.vtl
+
+functionConfigurations:
+  - dataSource: AuthService
+    name: auth-service
+    description: Auth service functions
+    type: AWS_LAMBDA
+    config:
+      functionName: auth-service
+
+  - dataSource: PatientService
+    name: patient-service
+    description: Patient service functions
+    type: AWS_LAMBDA
+    config:
+      functionName: patient-service
+
+  - dataSource: MedicalRecordService
+    name: medical-record-service
+    description: Medical record service functions
+    type: AWS_LAMBDA
+    config:
+      functionName: medical-record-service
+
+  - dataSource: AppointmentService
+    name: appointment-service
+    description: Appointment service functions
+    type: AWS_LAMBDA
+    config:
+      functionName: appointment-service

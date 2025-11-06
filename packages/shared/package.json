@@ -1,0 +1,28 @@
+{
+  "name": "@healthcare/shared",
+  "version": "1.0.0",
+  "main": "../../dist/packages/shared/src/index.js",
+  "types": "../../dist/packages/shared/src/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "watch": "tsc -b --watch",
+    "clean": "tsc -b --clean",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity": "^3.925.0",
+    "@aws-sdk/client-kms": "^3.478.0",
+    "@aws-sdk/client-rds-data": "^3.478.0",
+    "@aws-sdk/client-s3": "^3.478.0",
+    "@aws-sdk/client-secrets-manager": "^3.478.0",
+    "@aws-sdk/client-sns": "^3.478.0",
+    "aws-jwt-verify": "^4.0.1",
+    "joi": "^17.11.0",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/pg": "^8.10.9",
+    "typescript": "^5.3.3"
+  }
+}

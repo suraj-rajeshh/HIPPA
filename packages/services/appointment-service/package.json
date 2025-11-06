@@ -1,0 +1,19 @@
+{
+  "name": "@healthcare/appointment-service",
+  "version": "1.0.0",
+  "main": "../../../dist/packages/services/appointment-service/src/lambda.js",
+  "scripts": {
+    "build": "tsc -b",
+    "watch": "tsc -b --watch",
+    "clean": "tsc -b --clean"
+  },
+  "dependencies": {
+    "@healthcare/shared": "^1.0.0",
+    "aws-lambda": "^1.0.7"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.131",
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}

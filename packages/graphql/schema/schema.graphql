@@ -1,0 +1,518 @@
+schema {
+  query: Query
+  mutation: Mutation
+  subscription: Subscription
+}
+
+type Query {
+  # Auth
+  me: User!
+  
+  # Users
+  getUser(id: ID!): User
+  listUsers(filter: UserFilter, limit: Int, nextToken: String): UserConnection!
+  
+  # Patients
+  getPatient(id: ID!): Patient
+  listPatients(filter: PatientFilter, limit: Int, nextToken: String): PatientConnection!
+  searchPatients(query: String!): [Patient!]!
+  
+  # Appointments
+  getAppointment(id: ID!): Appointment
+  listAppointments(filter: AppointmentFilter, limit: Int, nextToken: String): AppointmentConnection!
+  getAvailableSlots(providerId: ID!, date: String!): [TimeSlot!]!
+  
+  # Medical Records
+  getMedicalRecord(id: ID!): MedicalRecord
+  listMedicalRecords(filter: MedicalRecordFilter, limit: Int, nextToken: String): MedicalRecordConnection!
+  
+  # Dashboard
+  getDashboard: Dashboard!
+  getPatientPortal: PatientPortal!
+  getProviderDashboard: ProviderDashboard!
+}
+
+type Mutation {
+  # Auth
+  register(input: RegisterInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
+  logout: Boolean!
+  refreshToken(refreshToken: String!): AuthPayload!
+  changePassword(input: ChangePasswordInput!): Boolean!
+  
+  # Users
+  updateUser(id: ID!, input: UpdateUserInput!): User!
+  deactivateUser(id: ID!): Boolean!
+  
+  # Patients
+  createPatient(input: CreatePatientInput!): Patient!
+  updatePatient(id: ID!, input: UpdatePatientInput!): Patient!
+  deletePatient(id: ID!): Boolean!
+  
+  # Appointments
+  createAppointment(input: CreateAppointmentInput!): Appointment!
+  updateAppointment(id: ID!, input: UpdateAppointmentInput!): Appointment!
+  cancelAppointment(id: ID!, reason: String!): Appointment!
+  confirmAppointment(id: ID!): Appointment!
+  
+  # Medical Records
+  createMedicalRecord(input: CreateMedicalRecordInput!): MedicalRecord!
+  updateMedicalRecord(id: ID!, input: UpdateMedicalRecordInput!): MedicalRecord!
+  deleteMedicalRecord(id: ID!): Boolean!
+  uploadDocument(input: UploadDocumentInput!): Document!
+}
+
+type Subscription {
+  onAppointmentUpdated(patientId: ID): Appointment
+    @aws_subscribe(mutations: ["updateAppointment", "createAppointment"])
+  
+  onMedicalRecordCreated(patientId: ID!): MedicalRecord
+    @aws_subscribe(mutations: ["createMedicalRecord"])
+}
+
+# Types
+type User {
+  id: ID!
+  email: String!
+  role: UserRole!
+  userType: UserType!
+  firstName: String!
+  lastName: String!
+  phone: String
+  dateOfBirth: String
+  isActive: Boolean!
+  lastLogin: String
+  createdAt: String!
+  updatedAt: String!
+  patient: Patient
+}
+
+type Patient {
+  id: ID!
+  userId: ID!
+  mrn: String!
+  user: User!
+  demographics: Demographics!
+  insurance: Insurance
+  medicalHistory: MedicalHistory
+  preferredLanguage: String
+  communicationPreferences: CommunicationPreferences
+  metadata: PatientMetadata
+  isActive: Boolean!
+  createdAt: String!
+  updatedAt: String!
+  appointments: [Appointment!]
+  medicalRecords: [MedicalRecord!]
+}
+
+type Demographics {
+  ssnLast4: String
+  address: Address!
+  emergencyContact: EmergencyContact!
+}
+
+type Address {
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  country: String!
+}
+
+type EmergencyContact {
+  name: String!
+  relationship: String!
+  phone: String!
+  email: String
+}
+
+type Insurance {
+  provider: String!
+  policyNumber: String!
+  groupNumber: String
+  subscriberId: String
+  effectiveDate: String
+  expirationDate: String
+}
+
+type MedicalHistory {
+  allergies: [String!]
+  chronicConditions: [String!]
+  medications: [String!]
+  surgeries: [Surgery!]
+  familyHistory: [String!]
+  immunizations: [Immunization!]
+}
+
+type Surgery {
+  name: String!
+  date: String!
+  notes: String
+}
+
+type Immunization {
+  name: String!
+  date: String!
+  lot: String
+}
+
+type CommunicationPreferences {
+  email: Boolean!
+  sms: Boolean!
+  phone: Boolean!
+}
+
+type PatientMetadata {
+  lastVisit: String
+  nextVisit: String
+  assignedProviderId: ID
+  tags: [String!]
+}
+
+type Appointment {
+  id: ID!
+  patientId: ID!
+  providerId: ID!
+  patient: Patient!
+  provider: User!
+  appointmentDate: String!
+  duration: Int!
+  type: String!
+  status: AppointmentStatus!
+  reason: String!
+  notes: String
+  location: String
+  isVirtual: Boolean!
+  reminderSent: Boolean!
+  createdAt: String!
+  updatedAt: String!
+}
+
+type MedicalRecord {
+  id: ID!
+  patientId: ID!
+  providerId: ID!
+  patient: Patient!
+  provider: User!
+  recordType: RecordType!
+  date: String!
+  title: String!
+  content: String!
+  icd10Codes: [String!]
+  cptCodes: [String!]
+  medications: [String!]
+  labResults: [LabResult!]
+  attachments: [Document!]
+  createdAt: String!
+  updatedAt: String!
+}
+
+type LabResult {
+  testName: String!
+  value: String!
+  unit: String!
+  referenceRange: String!
+  status: String!
+}
+
+type Document {
+  id: ID!
+  filename: String!
+  url: String!
+  fileType: String!
+  size: Int!
+  uploadedAt: String!
+}
+
+type TimeSlot {
+  startTime: String!
+  endTime: String!
+  available: Boolean!
+}
+
+type Dashboard {
+  profile: User!
+  upcomingAppointments: [Appointment!]!
+  recentRecords: [MedicalRecord!]!
+  notifications: [Notification!]!
+}
+
+type PatientPortal {
+  patient: Patient!
+  upcomingAppointments: [Appointment!]!
+  pastAppointments: [Appointment!]!
+  medicalRecords: [MedicalRecord!]!
+  recentActivity: [Activity!]!
+}
+
+type ProviderDashboard {
+  todayAppointments: [Appointment!]!
+  patientCount: Int!
+  pendingActions: [Action!]!
+  recentActivity: [Activity!]!
+}
+
+type Notification {
+  id: ID!
+  type: String!
+  message: String!
+  createdAt: String!
+  read: Boolean!
+}
+
+type Activity {
+  id: ID!
+  type: String!
+  description: String!
+  timestamp: String!
+}
+
+type Action {
+  id: ID!
+  type: String!
+  description: String!
+  priority: String!
+  dueDate: String
+}
+
+type AuthPayload {
+  accessToken: String!
+  refreshToken: String!
+  user: User!
+}
+
+type UserConnection {
+  items: [User!]!
+  nextToken: String
+}
+
+type PatientConnection {
+  items: [Patient!]!
+  nextToken: String
+}
+
+type AppointmentConnection {
+  items: [Appointment!]!
+  nextToken: String
+}
+
+type MedicalRecordConnection {
+  items: [MedicalRecord!]!
+  nextToken: String
+}
+
+# Enums
+enum UserRole {
+  PATIENT
+  GUARDIAN
+  PROVIDER
+  ADMIN
+  NURSE
+  RECEPTIONIST
+}
+
+enum UserType {
+  CLIENT
+  SERVICE_PROVIDER
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum RecordType {
+  DIAGNOSIS
+  PRESCRIPTION
+  LAB_RESULT
+  IMAGING
+  PROCEDURE
+  NOTE
+}
+
+# Inputs
+input RegisterInput {
+  email: String!
+  password: String!
+  firstName: String!
+  lastName: String!
+  phone: String
+  dateOfBirth: String
+  role: UserRole!
+  userType: UserType!
+  consentGiven: Boolean!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+  twoFactorCode: String
+}
+
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
+}
+
+input UpdateUserInput {
+  firstName: String
+  lastName: String
+  phone: String
+  dateOfBirth: String
+}
+
+input CreatePatientInput {
+  userId: ID!
+  demographics: DemographicsInput!
+  insurance: InsuranceInput
+  medicalHistory: MedicalHistoryInput
+  preferredLanguage: String
+}
+
+input UpdatePatientInput {
+  demographics: DemographicsInput
+  insurance: InsuranceInput
+  medicalHistory: MedicalHistoryInput
+  preferredLanguage: String
+}
+
+input DemographicsInput {
+  ssn: String
+  address: AddressInput!
+  emergencyContact: EmergencyContactInput!
+}
+
+input AddressInput {
+  street: String!
+  city: String!
+  state: String!
+  zipCode: String!
+  country: String!
+}
+
+input EmergencyContactInput {
+  name: String!
+  relationship: String!
+  phone: String!
+  email: String
+}
+
+input InsuranceInput {
+  provider: String!
+  policyNumber: String!
+  groupNumber: String
+  subscriberId: String
+  effectiveDate: String
+  expirationDate: String
+}
+
+input MedicalHistoryInput {
+  allergies: [String!]
+  chronicConditions: [String!]
+  medications: [String!]
+  surgeries: [SurgeryInput!]
+  familyHistory: [String!]
+  immunizations: [ImmunizationInput!]
+}
+
+input SurgeryInput {
+  name: String!
+  date: String!
+  notes: String
+}
+
+input ImmunizationInput {
+  name: String!
+  date: String!
+  lot: String
+}
+
+input CreateAppointmentInput {
+  patientId: ID!
+  providerId: ID!
+  appointmentDate: String!
+  duration: Int!
+  type: String!
+  reason: String!
+  notes: String
+  location: String
+  isVirtual: Boolean!
+}
+
+input UpdateAppointmentInput {
+  appointmentDate: String
+  duration: Int
+  type: String
+  status: AppointmentStatus
+  reason: String
+  notes: String
+  location: String
+}
+
+input CreateMedicalRecordInput {
+  patientId: ID!
+  providerId: ID!
+  recordType: RecordType!
+  date: String!
+  title: String!
+  content: String!
+  icd10Codes: [String!]
+  cptCodes: [String!]
+  medications: [String!]
+  labResults: [LabResultInput!]
+}
+
+input UpdateMedicalRecordInput {
+  title: String
+  content: String
+  icd10Codes: [String!]
+  cptCodes: [String!]
+  medications: [String!]
+  labResults: [LabResultInput!]
+}
+
+input LabResultInput {
+  testName: String!
+  value: String!
+  unit: String!
+  referenceRange: String!
+  status: String!
+}
+
+input UploadDocumentInput {
+  patientId: ID!
+  recordId: ID
+  filename: String!
+  contentType: String!
+}
+
+input UserFilter {
+  role: UserRole
+  userType: UserType
+  isActive: Boolean
+}
+
+input PatientFilter {
+  assignedProviderId: ID
+  isActive: Boolean
+}
+
+input AppointmentFilter {
+  patientId: ID
+  providerId: ID
+  status: AppointmentStatus
+  startDate: String
+  endDate: String
+}
+
+input MedicalRecordFilter {
+  patientId: ID
+  providerId: ID
+  recordType: RecordType
+  startDate: String
+  endDate: String
+}
